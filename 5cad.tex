@@ -1,0 +1,82 @@
+%%!TEX root = diss.tex
+
+\chapter{CAD}
+\label{ch:CAD}
+
+This chapter discusses the necessary considerations and adaptations made to the existing VPR CAD flow in order to support the proposed switch block memories. The CAD flow before the packing stage, namely synthesis and tech mapping, is tied with packing into section \ref{cad:pack}, section \ref{cad:place} details placement, and section \ref{cad:route} looks at routing.
+%  Stages of the CAD flow not discussed here are covered briefly in section \ref{bg:cad}. not modified and stayed the same as VPR's development branch (as of xxxx date). 
+
+\section{Pack}
+\label{cad:pack}
+
+As mentioned in \ref{bg:cad}, the packing stage takes the already technology mapped nodes and clusters based on atoms and molecules.
+% TODO: elaborate on VPR's clustering
+
+Given a machine learning circuit described in HDL, several cases arise when translating the memory blocks into hardware. Which hardware blocks (ie. bram or switch block memories) should be used? This is explored below with their difficulty of implementation expanded upon:
+\begin{itemize}
+    \item The first case is to infer all memories as switch block memories. This case is the easiest in implementation for circuits where memory does not saturate the available switch block memories. However, for larger circuits where the theoretical bit size limit for switch block memories is fully saturated, this is physically impossible to do.
+    \item Therefore, a potential solution is to infer some memories as switch block memories. This is more difficult to accomplish and leads to the dilemma involving which memories should be inferred as switch block memories and which ones should be inferred as brams. A algorithm similar to the place-route's rip-up and reroute scheme could perhaps be implemented, but would clearly increase total flow time. 
+   
+        Insert reasons ie how to differentiate between what is needed, what isn't needed. 
+    
+    Essentially new problem: what memories should be utilized as normal brams while what memories should be utilized as switch block memories.
+    \item infer no memories as switch block memories. This is trivial, and can be considered the base case. With the idea that by switching off a 'flag' in the code, it could be possible to directly turn off all changes that attempt to map memories as switch block memories.
+\end{itemize}
+
+The question arises: how many switch blocks can be used as switch block memories in an area?
+
+Considering small inference circuits, fully unrolled. Simplest case; isolate all memory that would be inferred as bram to switchblock memories.
+
+\section{Placement}
+\label{cad:place}
+
+As mentioned in \ref{bg:place}, placement consists of placing LUT (fine-grained) and macro (coarse) blocks onto a defined grid. Switch blocks occupy their own location on this grid and do not compete with other legal macro or LUT locations. 
+As the proposed architecture modifies switch blocks in place, the addition of switch block memories can be likened to that of a new macro block, since switch block memories do not occupy the same location as LUTs. Further, the only 'block' that can exist in switch block locations are only themselves, so this direct translation could work.
+However, the addition of this new macro block poses some challenges in the rest of the CAD flow. 
+Using switch block memories directly impacts and reduces the available routing structure of the FPGA, since some possible routing paths are no longer possible.
+
+This constitutes the first problem: \textit{where} should switch block memories be placed?
+
+\begin{itemize}
+    \item inside circuit 
+    \item along edge of circuit
+    \item inside 
+\end{itemize}
+
+We assume the circuit does not take the majority of floorplan space.
+
+Inside the circuit requires some heuristic regarding dispersion with density factor. Fully dense 100\% is impossible since this completely removes all possible routing paths, thus resulting in an unroutable circuit.
+
+This constitutes the second problem: \textit{how} should switch block memories be placed?
+
+% Switch block memory block placement heuristics that could affect the future route include:
+\begin{itemize}
+    \item like existing bram blocks?
+    \item In a column
+    \item In a row
+    \item dispersed with density factor
+    \item metric of distance (ie. closeness) in relation to static memory block locations (ie. bram)
+\end{itemize}
+
+This constitutes the third problem: \textit{when} should switch block memories be placed?
+% When in the placement flow
+\begin{itemize}
+    \item global placement
+    \item something like rip-up, replace, reroute?
+\end{itemize}
+
+
+\section{Routing}
+\label{cad:route}
+
+Routing changes are listed below:
+
+
+Routing requires consideration in placement involving the density of switch blocks to be used as memory. If all switch blocks were to be used as memory, routing would be impossible. Likewise, if all switch blocks were to be used as switch blocks, routing would not differ from the original. 
+
+% This is probably better as a discussion in results
+\section{Timing}
+\label{cad:timing}
+
+\section{Implementation Considerations}
+Consideration was also made to ensure that switch blocks that are designated as memories cannot be used as normal switch block operation. This is important because a switch block can exist in either normal operation or as a memory, and not both.

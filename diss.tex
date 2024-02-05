@@ -59,7 +59,7 @@
 %\usepackage{amssymb}
 %\usepackage{amsmath}
 %\usepackage{amsfonts}
-
+\usepackage[american, noarrowmos]{circuitikz}
 %% The pifont package provides access to the elements in the dingbat font.   
 %% Use \ding{##} for a particular dingbat (see p7 of psnfss2e.pdf)
 %%   Useful:
@@ -315,42 +315,41 @@
 %% Document meta-data: be sure to also change the \hypersetup information
 %%
 
-\title{On the Use of the \texttt{ubcdiss} Template}
-%\subtitle{If you want a subtitle}
+\title{A novel FPGA switch block memory architecture [WORKING TITLE]}
+% for domain-specific use-cases 
+\subtitle{DRAFT \today}
 
-\author{Johnny Canuck}
-\previousdegree{B. Basket Weaving, University of Illustrious Arts, 1991}
-\previousdegree{M. Silly Walks, Another University, 1994}
+\author{Martin Chua}
+\previousdegree{B.A.Sc., The University of British Columbia, 2022}
 
 % What is this dissertation for?
-\degreetitle{Doctor of Philosophy}
+\degreetitle{Master of Applied Science}
 
 \institution{The University of British Columbia}
 \campus{Vancouver}
 
 \faculty{The Faculty of Graduate and Postdoctoral Studies}
-\department{Basket Weaving}
+\department{Electrical and Computer Engineering}
 \submissionmonth{April}
-\submissionyear{2192}
+\submissionyear{2024}
 
 % details of your examining committee
-\examiningcommittee{John Smith, Professor, Materials Engineering, \textsc{UBC}}{Supervisor}
-\examiningcommittee{Mary Maker, Professor, Materials Engineering, \textsc{UBC}}%
-    {Supervisory Committee Member}
-\examiningcommittee{Nebulous Name, Position, Department, Institution}{Supervisory Committee Member}
-\examiningcommittee{Magnus Monolith, Position, Other Department, Institution}{Additional Examiner}
+\examiningcommittee{Steve Wilton, Professor, Department of Electrical and Computer Engineering, \textsc{UBC}}{Supervisor}
+\examiningcommittee{tbd, Professor, Department of Electrical and Computer Engineering, \textsc{UBC}}{Committee Member}
+\examiningcommittee{tbd, Professor, Department of Electrical and Computer Engineering, \textsc{UBC}}{Committee Member}
 
 % details of your supervisory committee
-\supervisorycommittee{Ira Crater, Professor, Materials Engineering, \textsc{UBC}}%
-    {Supervisory Committee Member}
-\supervisorycommittee{Adeline Long, \textsc{CEO} of Aerial Machine
-    Transportation, Inc.}{Supervisory Committee Member}
+% \supervisorycommittee{Ira Crater, Professor, Materials Engineering, \textsc{UBC}}%
+%     {Supervisory Committee Member}
+% \supervisorycommittee{Adeline Long, \textsc{CEO} of Aerial Machine
+%     Transportation, Inc.}{Supervisory Committee Member}
 
 %% hyperref package provides support for embedding meta-data in .PDF
 %% files
+% TODO
 \hypersetup{
   pdftitle={Change this title!  (DRAFT: \today)},
-  pdfauthor={Johnny Canuck},
+  pdfauthor={Martin Chua},
   pdfkeywords={Your keywords here}
 }
 
@@ -377,21 +376,28 @@
 % Preliminary Pages (numbered in lower case Roman numerals)
 %    1. Title page (mandatory)
 \maketitle
+% Consider placing version information if you circulate multiple drafts
+\vfill
+\begin{center}
+\begin{sf}
+\fbox{Revision: \today}
+\end{sf}
+\end{center}
 
 %    2. Committee page (mandatory): lists supervisory committee and,
 %    if applicable, the examining committee
 \makecommitteepage
 
 %    3. Abstract (mandatory - maximum 350 words)
-\include{abstract}
+\include{0abstract}
 \cleardoublepage
 
 %    4. Lay Summary (Effective May 2017, mandatory - maximum 150 words)
-\include{laysummary}
+\include{01laysummary}
 \cleardoublepage
 
 %    5. Preface
-\include{preface}
+\include{02preface}
 \cleardoublepage
 
 %    6. Table of contents (mandatory - list all items in the preliminary pages
@@ -412,12 +418,12 @@
 %   10. Lists of symbols, abbreviations or other (optional)
 
 %   11. Glossary (optional)
-\input{glossary}	% always input, since other macros may rely on it
+\input{03glossary}	% always input, since other macros may rely on it
 
-\textspacing		% begin one-half or double spacing
+\doublespacing		% begin one-half or double spacing
 
 %   12. Acknowledgements (optional)
-\include{ack}
+\include{04ack}
 
 %   13. Dedication (optional)
 
@@ -427,10 +433,16 @@
 \acresetall	% reset all acronyms used so far
 
 %    1. Introduction
-\include{intro}
+\include{1intro}
 
 %    2. Main body
 % Generally recommended to put each chapter into a separate file
+\include{2background}
+\include{3context}
+\include{4arch}
+\include{5cad}
+\include{6results}
+\include{7conclusion}
 %\include{relatedwork}
 %\include{model}
 %\include{impl}
@@ -444,7 +456,7 @@
 \begin{singlespace}
 \raggedright
 \bibliographystyle{abbrvnat}
-\bibliography{biblio}
+\bibliography{references}
 \end{singlespace}
 
 \appendix

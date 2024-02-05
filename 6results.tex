@@ -1,0 +1,70 @@
+%%!TEX root = diss.tex
+
+\chapter{Results}
+\label{ch:Results}
+
+\label{Circuits}
+
+\section{Area}
+\label{res:area}
+% TODO: move into results because this would flow better into the area calculations with bram/lutram
+\subsection{Configuration bit transistor count}
+\label{arch:transcount}
+% TODO: double check transistor counts
+As seen in Figure x, the proposed architecture adds an extra transistors per configuration bit with 2 pass transistors needed for the horizontal and vertical track connections. Since we address by groups of 4 (per word of 8 bits each) as with prior work and knowing that a single 4 directional switch within a switchblock uses 4 multiplexers with 2 configuration bits each, this equates to 4 x 2 + 2 = 10 extra transistors per switch. Assuming 256 directional connections to be modified in a switch block, there will be 16 x 128 extra transistors per switchblock.
+
+Decoder area is included in both baseline and new because we assume decoder logic is less costly than memory?
+
+\subsection{Computing active area}
+% TODO: reword?
+To obtain area, first a minimum-width transistor area is needed. This is the layout area occupied by the smallest transistor that can be contacted in a process, plus the minimum spacing to another transistor above it and to its right as shown in Figure 3.9. This area approximation provides a process-independent estimate and is useful in comparing FPGA architecture areas.
+
+From the transistor count in section \ref{arch:transcount} and a given minimum-width transistor area size, the total area approximation can be computed: 
+% Insert equation: area = transistor count * minimum transistor area size
+
+This area approximation model is also used in VPR.
+
+Below is a table that compares switchblock sizes with prior work and baseline without a modified switchblock, normalized to the same minimum-width transistor area.
+
+% Table: transistor count and minimum width transistor area per switchblock 
+
+% Key result is switchblock gets x% bigger.
+
+% How does translate to increase of whole area? Estimate of logic block and everything else. Maybe also have some data to talk about this. This will likely be asked in defense, need to get some data here.
+
+The left column of the table above is the transitor count, while the right column shows the minimum-width transistor area per switchblock. 
+
+% TODO: per switchblock or per tile? Here I give a brief reason why we examine per switchblock rather than per tile
+
+As only the switchblock architecture is modified, we examine the minimum width transistor area per switchblock, rather than per tile.
+
+\subsection{Tweaking the bit size of addressable words in a switchblock memory}
+% Ie is the bit size taken from prior work the right choice or just randomly gotten
+
+Modifying the number of bits per word affects the transistor count and the number of address lines, decoder, subsequently affecting area. 
+Active area is just transistors. More detailed estimates are possible using (andy ye's work).
+% TODO: how to calculate area wrt increased address lines?
+% Can ignore the wire lines in comparison to area.
+% Andy Ye's work looks into this.
+
+\section{Capacitance and delay}
+\label{res:delay}
+% Evaluation methodology. Maybe move to results.
+\section{Architecture Evaluation and Experimental Methodology}
+%  Area calculation. Comparison with modern bram, lutram. 
+The previous section explores the area calculation of the proposed enhanced programmable connection. This subsection compares the area with modern bram and lutram, using the same minimum-width transistor areas.
+
+% TODO: insert table here comparing them.
+
+% How to Evaulate this? Look at how a fully flexible switchblock memory is connected.
+One insight (by intuition?) in reducing this overhead while still retaining a portion of flexibility is to stagger the inputs and outputs to a quarter in each direction, then hardening the staggered input and output directions per switch point such that the write multiplexers are not needed and the read multiplexers can be reduced in input.
+
+% Spice simulations
+
+% Power.
+
+% Critical path delay graph (ns).
+
+% Number of tracks to route vs segment length.
+
+

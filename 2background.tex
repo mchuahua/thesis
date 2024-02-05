@@ -1,0 +1,201 @@
+%%!TEX root = diss.tex
+
+\chapter{Background}
+\label{ch:Background}
+
+Work in progress; "file:///Users/martin/Downloads/978-1-4614-3594-5.pdf"
+
+This chapter briefly outlines FPGA architecture, the contemporary computer aided design (CAD) flow, machine learning circuits on FPGAs, and prior work done in creating wide shallow memories. Section \ref{bg:TradFPA} outlines traditional FPGA architectures and what they are, with a summary of routing structures found in a typical FPGA. Section \ref{bg:cad} goes over how electronic design automation is used to map a hardware description language (HDL) to an FPGA. A typical CAD flow for FPGAs is provided. Next, section \ref{bg:ml} briefly covers how machine learning is used on FPGAs.
+Lastly, section \ref{bg:wideshallowmem} talks about wide shallow memories, what they are, and how they were used. 
+
+
+\section{Traditional FPGA Architectures}
+\label{bg:TradFPGA}
+
+Introduced over three decades ago, FPGAs have seen rapid growth and have become popular for digital circuit implementation. By utilizing its programmability, compute functionality can be customized to specific workloads as needed. An FPGA is comprised of a grid of programmable logic blocks, connected to one another via a programmable interconnect fabric.
+
+A typical FPGA is comprised of:
+\begin{itemize}
+    \item Programmable logic blocks which implement logic functions, known as configurable logic blocks (CLBs).
+    \item Programmable routing that connects these logic functions, known as connection boxes (CBs) and switchblocks (SBs).
+    \item Input/output (IO) blocks that are connected to the above logic blocks through the routing interconnect, to communicate and make off-chip connections
+\end{itemize}
+
+A general island style FPGA contain CLBs, CBs, and SBs arranged in a 2D-mesh grid.
+Insert figure here of FPGA architecture. Figure 2.5 in https://cse.usf.edu/~haozheng/teach/cda4253/doc/fpga-arch-overview.pdf is a good one to cite.
+
+
+\subsection{Routing interconnect}
+\label{bg:TradFPA-interconnect}
+As aforementioned, the routing interconnect ties together the programmable logic blocks into a user-defined circuit. 
+
+Modern FPGAs typically use static memory (SRAM) cells distributed across the device to provide configurability for programming the routing interconnect, steered by multiplexers, and to program the CLBs as seen in figure \ref{fig:sram_cell}.
+
+An example of a baseline SRAM memory cell connected to a multiplexer is shown below in figure \ref{fig:sram_cell}. 
+
+\begin{figure}
+\begin{center}
+\begin{circuitikz}
+    % Mux
+    \draw (0,0) node[muxdemux, muxdemux def={Lh=3, Rh=1, NL=2, NB=0, NT=1, NR=1}](mux){2:1 mux};
+    % Write transistor
+    \node[blue] [nmos, anchor=S](t1) at (mux.tpin 1){};
+    % Sel transistor
+    \node[blue] [nmos,rotate=-90,anchor=D](t2) at (t1.D){};
+    % Inverters
+    \node[blue] [ieeestd not port, anchor=in](a1) at (t1.D){};
+    \node[blue] [ieeestd not port, rotate=-180, anchor=out](a2) at (t1.S){};
+    % Connect inverters
+    \draw[blue] (a2.in) to (a1.out);
+    % Labels
+    \draw[blue] (t1.G) to[short,l=write] ++(0,0);
+    \draw[blue] (t2.G) to[short,l=sel] ++(0,0);
+    \draw[blue] (t2.S) to[short,l=config] ++(0,0);
+\end{circuitikz}
+\caption{Basic SRAM cell (blue) connected to a 2:1 multiplexer}
+\label{fig:sram_cell}
+\end{center}
+\end{figure}
+
+The routing interconnect of an FPGA consists of wires and programmable switches that form the required connection. These programmable switches are configured using the programmable technology.
+
+The routing tracks connected through a switch box can be bidirectional or unidirectional (also called as directional) tracks. 
+
+Modern commercial FPGA architectures have moved towards using single-driver, directional
+routing tracks. Authors in [Directional and single-driver wires in FPGA
+interconnect, ICFPT] show that if single-driver directional wiring is used
+instead of bidirectional wiring, 25\% improvement in area, 9\% in delay and 32% in
+area-delay can be achieved. All these advantages are achieved without making any
+major changes in the FPGA CAD flow.
+
+Talk about capacitance.
+
+\section{Wide Shallow Memories}
+\label{bg:wideshallowmem}
+
+% This is the abstract copy pasted, reworded
+Oldridge et al. \cite{Oldridge2005AMemories} proposes an architecture that implements wide, shallow memories on an FPGA. The configuration memory as seen in figure \ref{fig:sram_cell} (from above) that is normally used to control the connectivity pattern of the FPGA can be modified and made user accessible. From the insight that a typical design does not use all the switch blocks in an FPGA to transport signals, Oldridge et al. add a modest amount of circuitry to make use of the configuration memory in these unused switch blocks (or unused paths within used switch blocks). They show that the size of FPGA required to implement a benchmark circuit that makes use of the wide, shallow memories, is 20\% smaller than a standard memory architecture. In addition, the benchmark circuit is on average 40\% faster using the proposed architecture.
+
+Implements a 8-address-deep wide memory depending on the number of tracks.
+% Talk about its architecture in how it connects to the switchblock, including how it is addressed.
+\subsection{Architecture}
+Figure \ref{fig:prior_baseline} shows the baseline architecture used in prior work. It uses a bidirectional track with configuration memory attached to the tri-state buffers.
+
+\begin{figure}
+\begin{center}
+\begin{circuitikz}
+    % Pass transistor + sram write transistor
+    \draw[blue] (0,-1) node[nmos, rotate=-90](p1){};
+    \draw (p1.G) to[short] ++(0,1) node[nmos, anchor=S](t1){};
+    % sram sel transistor
+    \node [nmos,rotate=-90,anchor=D](t2) at (t1.D){};
+    % sram Inverters
+    \node [ieeestd not port, anchor=in](a1) at (t1.D){};
+    \node [ieeestd not port, rotate=-180, anchor=out](a2) at (t1.S){};
+    % Connect sram inverters
+    \draw (a2.in) to (a1.out);
+    % sram Labels
+    \draw (t1.G) to[short,l=write] ++(0,0);
+    \draw (t2.G) to[short,l=sel] ++(0,0);
+    \draw (t2.S) to[short,l=config] ++(0,0);
+    % Tri state
+    \node[blue] [ieeestd not port, anchor=out](a3) at (p1.S){};
+    \node[blue] [ieeestd not port, anchor=out](a4) at (a3.in){};
+    \draw[blue] (a4.in) to[short] ++(0,-2);
+    \draw[blue] (p1.D) to[short] ++(0,-2) node[ieeestd not port, xscale=-1,anchor=in](a5){};
+    \node[blue] [ieeestd not port, xscale=-1, anchor=in](a6) at (a5.out){};
+    \node[blue] [nmos, rotate=90, anchor=S](p2) at (a6.out){};
+    % Draw 2nd sram below
+    \draw (p2.G) to[short] ++(0,-1) node[nmos, xscale=-1, anchor=D](t3){};
+    % sram sel transistor
+    \node [nmos,rotate=-90,xscale=-1,anchor=S](t4) at (t3.S){};
+    % sram Inverters
+    \node [ieeestd not port,anchor=out](a3) at (t3.D){};
+    \node [ieeestd not port,xscale=-1,anchor=in](a4) at (t3.S){};
+    % Connect sram inverters
+    \draw (a3.in) to (a4.out);
+    % sram Labels
+    \draw (t3.G) to[short,l=write] ++(0.3,0);
+    \draw (t4.G) to[short,l=sel] ++(0,0);
+    \draw (t4.D) to[short,l=config] ++(1,0);
+\end{circuitikz}
+\caption{Bi-directional (blue) programmable connection}
+\label{fig:prior_baseline}
+\end{center}
+\end{figure}
+
+The switch block tracks are used as address lines. Address lines are connected to a decoder that addresses individual words in the switch block memory. Two control signals (MemVert and MemHorz) are used to determine which direction the output is read out to. 
+
+
+
+Prior work uses the modified configuration memory to implement wide, shallow buffers and other similar memory structures. Since this configuration memory is contained within the switchblock, they are aptly named \textit{switch block memories}.
+
+% TODO: include arcitecture description and diagrams here or below?
+
+% Talk about not adapted to modern technolgoy
+However, prior work has limitations on the baseline architecture. They explore bidirectional routing, seen in figure \ref{fig:prior_baseline}. Bidirectional routing is shown to have worse performance compared to unidirectional routing \cite{Lemieux2004DirectionalInterconnect}, as it can drive reduce overhead and driver strength. As a result, a modern adaptation with unidirectional routing should be explored.
+
+% TODO: develop points further
+Prior work also explores its application as buffers in high speed IO. Modern domain-specific applications such as machine learning can be explored by using these switch block memories as storage.
+
+% TODO: insert figures/diagrams from Oldridge paper?
+
+\section{Machine Learning on FPGAs}
+\label{bg:ml}
+% TODO: talk about traditional FPGA architecture in background.
+Machine learning acceleration on FPGAs is becoming increasingly prevalent. This has motivated recent research such as modifying the FPGA fabric to accelerate machine-learning-specific computations. 
+
+% TODO: Insert references / citations to
+Examples include:
+- Traditional FPGA architecture changes in CLBs, LUTs
+- DSP architectures to improve/streamline MACs (low vs high precision)
+- Some novel dataflow compute architecture for specific models
+- memory optimizations
+- ml debug at speed using overlays
+
+% TODO: expand
+
+\section{Electronic Design Automation}
+\label{bg:cad}
+
+The software flow (CAD flow) takes an application design description in a Hardware Description Language (HDL) and converts it to a stream of bits that is eventually programmed on the FPGA. The process of converting a circuit description into a format that can be loaded into an FPGA can be roughly divided into three steps: synthesis, placement, and routing. 
+
+\subsection{Synthesis}
+\label{bg:syn}
+
+hdl techmap, synthesis, pack
+technology mapping, mapping
+
+% Mention that tech mapping is part of synthesis?
+
+
+\subsection{Placement}
+\label{bg:place}
+
+The placement stage of the CAD flow involves placing blocks, defined by the netlist given in the previous stage, onto specified areas of the FPGA. 
+
+Often, there exists two types of blocks: macro blocks and LUTs. LUTS are more finely defined by the circuit, while macro blocks are hard IP that are optimized for a specific use case.
+
+% Probably talk about inferencing in synthesis instead.
+This is where prior subsection's inference comes in. 
+
+Given thse blocks of possibly varying types and a map, we have a placement problem in that how can we optimize this placement according to a cost function?
+
+There are a couple of solutions thought up along the way, and simulated annealing is one that is usually included in some manner. 
+
+% Talk about sa
+
+% Talk about other methods? maybe not.
+
+
+
+\subsection{Route}
+\label{bg:route}
+
+The routing stage of the CAD flow involves connecting the placed blocks from the previous stage together.
+
+Algorithms more complicated such as rip-up and re-route exist, but are outside the scope of this thesis.
+
+Pathfinder essentially finds a path
+
+A*

@@ -1,0 +1,186 @@
+%%!TEX root = diss.tex
+
+% Todo: possibly talk about streaming type vs non-streaming type (more of an usecase), lower priority. Will need to add references here.
+
+\chapter{Context}
+\label{ch:Context}
+
+This chapter outlines types of machine learning circuits and what they look like specifically in the context of FPGA memory structures, comparing and constrasting existing memory blocks with switchblock memories. More specifically, we discuss how the memory usage of these machine learning circuits map to memory structures, including wide shallow memories and BRAMs.
+% This paves the way to requirements that the proposed architecture will need (in a future chapter)
+% Sub chapter names may need to be revised later
+Section \ref{context:unroll} gives a background on how memory is affected in circuit unrolling. Section \ref{context:mem} goes over the possible types of memory that can be used on an FPGA. Section \ref{context:storage} explores the considerations needed for various unrolling factors with types of machine learning circuits.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Circuit unrolling in the context of memory}
+\label{context:unroll}
+% After discussion, pros/cons of unrolling factors do not need to be fully outlined
+
+Machine learning models can be large and involve a substantial amount of iterative computations, such as training neural networks through back-propagation or performing inference in layers. These iterative computations when mapped to circuits can be optimized by \textit{rolling}, or compressing and looping parts of the circuit that involve known, repeated computations. That being said, both fully rolled and fully unrolled contain trade-offs depending on implementation.
+
+A fully rolled circuit minimizes compute blocks and area but has an additional overhead in loop control, such as counters, pointers, and condition checks. Memory components like weights and activations for example could potentially be streamed in off-chip, reducing the maximum size requirements of weight and activation memory stored. However, streaming data is potentially bandwidth limited and also involves additional hardware overhead to handle this. 
+
+In comparison, a fully unrolled circuit without optimization takes up a larger area compared to a rolled circuit, due to a one-to-one mapping of unique blocks representing unique sections/layers of a machine learning model. This could result in an increased resource usage in logic elements. Since an FPGA has limited resources on-chip, fully unrolling a circuit can compete for resources from other parts of the circuit that may require the same resources. The increased logic resulting from loop unrolling may impact routing congestion and the complexity of interconnects. This can affect the timing and performance of the circuit, especially if the unrolled logic results in longer signal paths between memory blocks and logic blocks. 
+% However, depending on the type of circuit, certain optimizations can be done. This is explained in a later subsection.
+In terms of memory, this could positively impact memory access patterns and improve spatial locality depending on the type of memory used. If switchblock memories are used, the source-to-sink signal delay can be reduced by reducing memory latency via a more direct memory-to-block connection. 
+
+Partially unrolled circuits can balance these trade-offs that exist for both fully rolled and fully unrolled circuits.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Memory}
+\label{context:mem}
+
+The amount of memory and its usage is inherently linked to the machine learning model's architecture. Changing the model and its associated underlying architecture varies the memory requirements based on features such as size, complexity, number of parameters, embeddings, weights, and activations. Memory usage varies depending on whether a machine learning circuit is fully unrolled, partially unrolled, or fully rolled. Weights and activations, for example, require repeated memory accessing and would benefit from lower latency memory.
+
+As described in section \ref{bg:TradFPGA}, dedicated memory is often in the form of embedded BRAMs distributed throughout the FPGA. The RAM blocks provide a dense method of suitably implementing storage. In the context of substantial memory accesses, it may not be well suited for machine learning purposes.
+
+% LUTs
+On the other hand, distributed memory in the form of LUTs are possible for small, local storage needs within the FPGA fabric, but are much more limited in capacity and pose another downside of resource contention. Since LUTs are shared among various components of the circuit design, using them as memory may compete with logic implementation and result in design constraints that compromise overall performance. However, these memories are typically shallow, and come with shorter access latency. In a latency-sensitive compute environment such as machine learning workloads where the bottleneck is memory accesses, minimizing access time is advantageous for model performance.
+
+% Describe why weights and activations are good for 
+% Wide shallow memories
+Switchblock memories, or wide shallow memories, as described in section \ref{bg:wideshallowmem} can potentially provide higher bandwidth for memory accesses due to lower access latency. In machine learning workloads where weights and activations need to be fetched quickly and continuously, these wide shallow memories can contribute to improved model performance. Introducing such wide shallow memories into the fabric can complement and reduce other memory workloads, with the potential to offload usage of existing memory to other memory intensive tasks.
+At its core, no memory is removed when adding switchblock memories. Only memory is being added, although tradeoffs being that more transistors and a more complex implementation is required.
+
+% Should there be another paragraph that attempts to tie weights/activations to shallow memories to unrolled/rolled circuit to training/inferencing (next section)?
+
+% TODO: Memory hierarchy? I.e. where switchblock memories fit in the memory hierarchy from sram to bram to hot storage to cold storage.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Storage requirements for memory in training versus inference}\
+\label{context:storage}
+This section explores the possible memory storage requirements in mapping machine learning memory usage (eg. weights and activations) to hardware circuits. 
+% Explicitly establish what we do not talk about
+Research in optimizing machine learning models themselves to circuits is an entire field of its own, which is out of scope of this section (and thesis).
+% Eg. https://www.sciencedirect.com/science/article/abs/pii/S0167926022000992
+
+\label{sec:trainingvsinference}
+% Should we expand memory requirements further with concrete evidence/citations? Possibly add this to background?
+Training neural networks generally involve a much higher memory requirement due to the need for additional storage of parameters, activations, gradients, and intermediary values. Circuits that model training architectures are referred to as \textit{training circuits}.
+In contrast, inference neural networks involve a lower memory usage, primarily having pre-trained weights and activations without the need for extensive storage and computation associated with training. Circuits that model inferencing architectures are referred to as \textit{inference circuits}.
+
+% TODO: does this exist? is this common? is a citation needed?
+Although architectures exist that accelerate both training and inference, 
+we deliberately delineate the two to showcase explicitly where the proposed memory architecture performs well and where it does not. Regardless, merging the training and inference use-cases implies a memory usage structure emulating that of a training circuit.
+
+Permutations between the type of machine learning circuit (i.e. training or inference) and unrolling factors (i.e. fully unrolled, partially unrolled, or fully rolled) influence the memory storage requirements, their structure, and how they could be optimized. The table below categorizes and outlines six possible permutations.
+
+% Not sure about the structure of this table or its contents or if this is even needed. May have to revise this later
+\begin{table}[h!]
+\centering
+\caption{Different permutations between type of memory circuit and various unrolling factors}
+\label{tab:table1}
+\begin{tabular}{l|l}
+Inference circuit, fully unrolled & Training circuit, fully unrolled \\ \hline
+Inference circuit, partially unrolled & Training circuit, partially unrolled \\ \hline
+Inference circuit, fully rolled & Training circuit, fully rolled
+\end{tabular}
+\end{table}
+
+\subsection{Inference circuits}
+\label{context:infcircuits}
+The memory storage requirements for inference circuits involve only pre-trained weights and activations. 
+As such, inference circuits are generally less complex to implement as compared to training circuits. 
+
+\subsubsection{Fully unrolled}
+\label{context:infcircuits-fullyunrolled}
+Inference circuits that are fully unrolled can be constructed in two ways. 
+
+A naive method could be to directly map the fully unrolled circuit onto the FPGA without optimization. 
+% Should I define localized compute? Is this clear?
+The circuit being fully unrolled implies localized compute and localized memory reads, so accesses to specific memory locations are likely to originate only from parts of the circuit where this computation is taking place. This localization of memory accesses can be complemented by switchblock memories. 
+Due to their structure, they could provide lower latency access and shorter wire routing to/from the memory blocks for localized compute. In contrast, existing memory structures could perform worse in memory access latency due to an increase in routing resources, as they are structured in banks/slices and exist in only certain areas of the chip as macro blocks. This can also free up existing memory structures to be used by other parts of the design, if the inference circuit is a subset of the entire design to be implemented on-chip.
+
+However, since pre-trained weights and activations are used, there is a special case in which optimizations on both the memory and circuit could be performed. Logic branches where pre-computed weights and activations are zero will likewise propagate zero regardless of input. By leveraging this insight, the logic could be potentially pipelined and optimized in such a way that the switchblock memories provide no benefit. Existing memory structures may not even need to be used. 
+
+\subsubsection{Fully rolled}
+\label{context:infcircuits-fullyrolled}
+Some consideration must be made for fully rolled circuits, as they can be much smaller in size compared to fully unrolled. This could significantly reduce routing resources. Inference circuits that are fully rolled can also access memory slices containing weights and activations. However, by virtue of its name, fully rolled circuits are \textit{rolled up} and optimized by their looping patterns. 
+
+Looping patterns differ for various model layers based on their access patterns. These layers can typically be constructed as a series of nested loops with differing loop bounds, strides, and operations depending on the specific network at hand. 
+% Should I include in detail possible looping patterns? these looping patterns impact memory structure in probably similar ways
+% cite esther's master thesis for explicit looping patterns. (Page 37-38.) or look at her citations
+The differing loop bounds and operations influence the way a fully rolled circuit's memory is accessed.
+In the base case, consider normal memory blocks that are organized in banks. With these looping patterns, it could be possible to exploit the regularity of these memory banks by making use of spatial and temporal locality techniques. Since the looping patterns and bounds are known and pre-determined, basic pipelining and memory prefetching techniques can be implemented. This pipelining can effectively hide any memory access latencies for n>1 loops.
+
+Switchblock memories could potentially be used in a structured format, albeit the tradeoff being a tremendously large increase in routing resources. It is not desirable to use switchblock memories in such a way and existing structured memory banks will likely show greater performance. 
+
+% TODO: expand on this here, or in future work in conclusion? We would first need to show that latency is lower. 
+Switchblock memories could potentially be used as a cache, possibly with cache policies that manage this type of memory as a lower-level cache. This could then allow switchblock memories to complement memory prefetching techniques as mentioned above. However, a whole study into cache policies and schemes would need to be done, and is out of scope for this thesis.
+
+\subsubsection{Partially unrolled}
+Inference circuits that are partially unrolled combine elements from both fully unrolled and fully rolled. 
+It is probable that most circuits belong in this category due to tradeoffs in circuit optimization versus circuit size. 
+% Should I discuss varying levels of unrolling? After thinking about it, I don't see any possibilities that can be mentioned here that wouldn't already be mentioned above in the last two sections.
+
+\subsection{Training memory storage requirements}
+Training circuits include additional components that require memory, such as gradients and intermediary values. Compared to inference circuits, training circuits also require memory writes. The proposed switchblock memory architecture allows for both read and writes. Fast access latency would also work for training circuits, and it is likely that intermediary values and scratchpad memory could perform better than baseline. Though realistically, training circuits are more complicated to adapt to a switchblock-capable architecture, since isolating their memories in CAD flow is less trivial than only isolating weights and activations.
+
+% citation needed?
+Typically, training in general would usually not be implemented on FPGAs since it would be much faster to accomplish the same task on an ASIC due to the high regularity and parallelization of neural network training computations. That being said, all points mentioned in section \ref{context:infcircuits} apply here as well.
+
+% Basically the same except for memory writes. 
+% Should the subsubsections below just be removed/consolidated into training section? Is there enough difference from the inference circuit?
+\subsubsection{Fully unrolled}
+As mentioned, training circuits that are fully unrolled are similar to that of a fully unrolled inference circuit, but there is only one possible case now, where the fully unrolled circuit could be directly mapped onto the FPGA without any optimization. Since the circuit is fully unrolled, memory accesses could be localized by using switchblock memories. Intermediary values could also be stored in switchblock memories as a scratchpad for faster accessing.
+
+The optimized case mentioned in section \ref{context:infcircuits-fullyunrolled} cannot be reflected in the same way with training circuits. With additional memory requirements and the memory values being undetermined, the fully unrolled training circuit's compute cannot be optimized out.
+
+\subsubsection{Fully rolled}
+Training circuits that are fully rolled are more complex than inference circuits, but the same points apply. One additional case is that switchblock memories could potentially complement existing memory by acting as scratchpad memories during training. Since memory accesses for existing memory can be pipelined and accessed in "a smart manner", switchblock memories would not completely replace existing memory but could exist in tandem to speed up training. This is similar to the discussion in Section \ref{context:infcircuits-fullyrolled} regarding caches.
+
+\subsubsection{Partially unrolled}
+Training circuits that are partially unrolled are similar as in the inference case; both combine elements from fully unrolled and fully rolled.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Summary}
+\label{context:summary}
+
+Refer to section \ref{bg:wideshallowmem} for a description of wide shallow memories in prior work. The architecture is further described in section \ref{ch:Architecture}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Why would these memories be useful}
+% \label{sec:Memorries}
+
+% Is fast and low latency.
+
+\endinput
+- How this maps to weights, activations, what storage looks like.
+
+- How big these memories are, what they look like
+
+- Normal architecture vs ml specific
+
+- What does it mean for Training vs inference 
+
+- Completely unrolled
+
+- What does it mean to map memories onto FPGA
+
+- Unrolled circuits vs rolled. Is this different for training vs inference.
+
+- Want to store them more efficiently.
+
+Due to the six different possible memory configurations that must be handled, we can construct a basic list of requirements that I need to show. These include:
+\begin{itemize}
+    \item As memories should be able to handle both training and inference, we need to show that reading and writing to the memories is possible;
+    \item While keeping in mind tradeoffs, the memory architecture should show some amount of evaluation in:
+    \begin{itemize}
+        \item architecture -> transistor usage/count. Baseline vs new. This is the area overhead. Don't need to size the transistors right now.
+        \item routing resources. Congestion
+        \item evaluate different circuits
+        \item evaluate different densities of switchblocks. Graph of density vs congestion.
+        \item baseline original vs baseline switchblock mem without switchblocks used
+        \begin{itemize}
+            \item True overhead of Fmax and area (since adding extra transistors will slow down regardless, extra parasitic capacitances)
+            \item Look at the ways we use it in Ch3 and compare them.
+            \item Routing/congestion should be the same if same circuit and no switchblocks are used.
+            \item Power is nice to have. Static/dynamic. Power may decrease. Average energy to read from switchblock memories vs embedded memories (from spice or a model).
+        \end{itemize}
+    \end{itemize}
+    \item Latency of the memory should be evaluated. Access time + routing time. Probably SPICE the memory access time models. Elmer delay may not be as accurate? 
+    \item 
+\end{itemize}
